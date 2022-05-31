@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['/Users/sakritkarmacharya/PycharmProjects/pyqt-test/main.py'],
+    ['C:\\Users\\AIMLAB\\PycharmProjects\\pyqt-test\\main.py'],
     pathex=[],
     binaries=[],
     datas=[],

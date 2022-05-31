@@ -100,6 +100,29 @@ class CanvasWin(QMainWindow):
 
         self.lastPoint = QPoint()
 
+    def tabletEvent(self, event):
+        eventType = event.type()
+        if (eventType == QEvent.TabletPress):
+            self.drawing = True
+            self.lastPoint = event.pos()
+
+            if self.recording:
+                self.recordInstance(self.lastPoint)
+        elif (eventType == QEvent.TabletMove and self.drawing):
+            self.paintLine(self.image, self.lastPoint, event.pos())
+
+            if self.recording:
+                # self.paintLine(self.storedImage, self.lastPoint, event.pos())
+                self.recordInstance(self.lastPoint)
+
+            self.lastPoint = event.pos()
+
+            self.update()
+        elif eventType == QEvent.TabletRelease:
+            self.drawing = False
+        self.pressure = event.pressure()
+        print("Tablet Event, {}".format(self.pressure))
+
     def setupToolBar(self):
         self.toolBar = QToolBar(self)
         self.toolBar.setObjectName("toolBar")
@@ -147,35 +170,40 @@ class CanvasWin(QMainWindow):
     def cancel(self):
         print("Cancel")
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.drawing = True
-            self.lastPoint = event.pos()
+    # TODO Maybe I need to Use Tablet Event to get rid of delay error
 
-            if self.recording:
-                self.recordInstance(self.lastPoint)
+    # def mousePressEvent(self, event):
+    #     if event.button() == Qt.LeftButton:
+    #         self.drawing = True
+    #         self.lastPoint = event.pos()
+    #
+    #         if self.recording:
+    #             self.recordInstance(self.lastPoint)
+
+    def getBrushSize(self):
+        return .5 + 5 * self.pressure
 
     def paintLine(self, image, pointA, pointB):
         painter = QPainter(image)
-        painter.setPen(QPen(self.brushColor, self.brushSize, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(self.brushColor, self.getBrushSize(), Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.setRenderHint(QPainter.Antialiasing)
         painter.drawLine(pointA, pointB)
 
-    def mouseMoveEvent(self, event):
-        if (event.buttons() & Qt.LeftButton) & self.drawing:
-            self.paintLine(self.image, self.lastPoint, event.pos())
+    # def mouseMoveEvent(self, event):
+    #     if (event.buttons() & Qt.LeftButton) & self.drawing:
+    #         self.paintLine(self.image, self.lastPoint, event.pos())
+    #
+    #         if self.recording:
+    #             # self.paintLine(self.storedImage, self.lastPoint, event.pos())
+    #             self.recordInstance(self.lastPoint)
+    #
+    #         self.lastPoint = event.pos()
+    #
+    #         self.update()
 
-            if self.recording:
-                self.paintLine(self.storedImage, self.lastPoint, event.pos())
-                self.recordInstance(self.lastPoint)
-
-            self.lastPoint = event.pos()
-
-            self.update()
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.drawing = False
+    # def mouseReleaseEvent(self, event):
+    #     if event.button() == Qt.LeftButton:
+    #         self.drawing = False
 
     def paintEvent(self, event):
         canvasPainter = QPainter(self)
@@ -183,11 +211,10 @@ class CanvasWin(QMainWindow):
 
     def saveCanvas(self, recordingName):
         filePath = "{}_{}_{}.png".format(activeUser, recordingName, self.recordingStartDate)
-        self.storedImage.save(filePath)
+        # self.storedImage.save(filePath)
 
     def clear(self):
         self.image.fill(Qt.white)
-        # self.storedImage.fill(Qt.white)
         self.update()
 
 class MsgBoxDlg(QDialog):
