@@ -136,7 +136,7 @@ class Ui_MainWindow2(object):
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.actionClear = QtWidgets.QAction(MainWindow)
         icon = QtGui.QIcon()
-        # icon.addPixmap(QtGui.QPixmap("UI/../delete.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        # icon.addPixmap(QtGui.QPixmap("UI/../delete_icon.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionClear.setIcon(icon)
         self.actionClear.setObjectName("actionClear")
         self.actionLog_Out = QtWidgets.QAction(MainWindow)
