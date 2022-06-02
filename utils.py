@@ -6,8 +6,10 @@ from PyQt5.QtWidgets import QAction
 def getDate():
     return datetime.now().strftime("%d-%m-%Y")
 
-def getTime():
-    return datetime.now().strftime("%H:%M:%S.%f")
+def getTime(millis = True):
+    if (millis):
+        return datetime.now().strftime("%H:%M:%S.%f")
+    return datetime.now().strftime("%H:%M:%S")
 
 def getIcon(path):
     icon = QIcon()
