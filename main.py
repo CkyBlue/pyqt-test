@@ -19,7 +19,11 @@ from subprocess import Popen, PIPE
 from time import sleep
 import os
 
-usernames = {"SK": "A!ML@B"}
+import json
+
+with open('users.json', 'r') as openfile:
+    usernames = json.load(openfile)
+
 activeUser = None
 
 
@@ -60,6 +64,11 @@ class LoginWin(QDialog):
 
         else:
             usernames[username] = password
+
+            json_object = json.dumps(usernames, indent=4)
+            with open("users.json", "w") as outfile:
+                outfile.write(json_object)
+
             msg.setMsg("Successfully registered user.")
 
         msg.exec()
@@ -107,8 +116,13 @@ class CanvasWin(QMainWindow):
         self.setObjectName("MainWindow")
         self.setWindowTitle("Canvas")
 
-        self.setGeometry(0, 0, 800, 600)
-        self.setFixedSize(800, 600)
+        # self.setGeometry(0, 0, self.frameGeometry().width(), self.frameGeometry().height())
+        # self.setFixedSize(800, 600)
+
+        geometry = app.desktop().availableGeometry()
+        self.setGeometry(geometry)
+
+        self.showMaximized()
 
         self.setTabletTracking(True)
 
@@ -127,18 +141,21 @@ class CanvasWin(QMainWindow):
 
     def tabletEvent(self, event):
         eventType = event.type()
+
+        data = [event.xTilt(), event.yTilt(), event.pressure()]
+
         if (eventType == QEvent.TabletPress):
             self.drawing = True
             self.lastPoint = event.pos()
 
             if self.recording:
-                self.recordInstance(self.lastPoint)
+                self.recordInstance(self.lastPoint,data)
         elif (eventType == QEvent.TabletMove and self.drawing):
             self.paintLine(self.image, self.lastPoint, event.pos())
 
             if self.recording:
                 # self.paintLine(self.storedImage, self.lastPoint, event.pos())
-                self.recordInstance(self.lastPoint)
+                self.recordInstance(self.lastPoint, data)
 
             self.lastPoint = event.pos()
 
@@ -192,9 +209,9 @@ class CanvasWin(QMainWindow):
     #TODO Remove mouse callbacks
 
     # TODO Compress
-    def recordInstance(self, pos):
-        self.strokeData[getTime()] = "({}, {})".format(pos.x(), pos.y())
-        print(getTime(), pos.x(), pos.y())
+    def recordInstance(self, pos, data):
+        self.strokeData[getTime()] = "({}, {}, {})".format(pos.x(), pos.y(), data)
+        print(getTime(), pos.x(), pos.y(), data)
 
     def save(self, recordingName, difficulty):
         self.saveRecording(recordingName, difficulty)
@@ -208,6 +225,7 @@ class CanvasWin(QMainWindow):
     # TODO Maybe I need to Use Tablet Event to get rid of delay error
 
     def mousePressEvent(self, event):
+        return
         if event.button() == Qt.LeftButton:
             self.drawing = True
             self.lastPoint = event.pos()
@@ -225,6 +243,7 @@ class CanvasWin(QMainWindow):
         painter.drawLine(pointA, pointB)
 
     def mouseMoveEvent(self, event):
+        return
         if (event.buttons() & Qt.LeftButton) & self.drawing:
             self.paintLine(self.image, self.lastPoint, event.pos())
 
@@ -237,6 +256,7 @@ class CanvasWin(QMainWindow):
             self.update()
 
     def mouseReleaseEvent(self, event):
+        return
         if event.button() == Qt.LeftButton:
             self.drawing = False
 
