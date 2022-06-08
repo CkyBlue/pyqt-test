@@ -1,23 +1,17 @@
-from PyQt5.QtCore import *
+from PyQt5.QtCore import Qt, QPoint, QEvent
 
-from components.Canvas import Ui_MainWindow as Canvas
-from components.ProtoCanvas import Ui_MainWindow as ProtoCanvas
 from components.Login import Ui_Dialog as Login
 from components.MsgBox import Ui_Dialog as MsgBox
 from components.SaveRec import Ui_Dialog as SaveRecording
-from components.Register import Ui_Dialog as Register
 
 from utils import *
 
 import sys
 
-from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QToolBar, QWidget
+from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QToolBar
 from PyQt5 import QtCore
 
-from socket import timeout
 from subprocess import Popen, PIPE
-from time import sleep
-import os
 
 import json
 
@@ -129,7 +123,7 @@ class CanvasWin(QMainWindow):
         self.storedImage.fill(Qt.white)
 
         self.drawing = False
-        self.useMouse = True
+        self.useMouse = False
 
         self.brushSize = 4
         self.brushColor = Qt.black
