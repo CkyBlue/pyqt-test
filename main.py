@@ -99,16 +99,20 @@ class CanvasWin(QMainWindow):
         if (self.handTrackingProcess != None):
             self.handTrackingProcess.terminate()
 
-        self.handTrackingProcess = Popen(["LeapTest.exe"], stdout=PIPE, stdin=PIPE,)
+        self.handTrackingProcess = Popen(["LeapTest.exe"], stdout=PIPE, stdin=PIPE, stderr=PIPE)
         pass
 
     def stopHandTracking(self):
-        (output, err) = self.handTrackingProcess.communicate(input=b'\r\n')
+        # (output, err) = self.handTrackingProcess.communicate(input=b'\r\n')
+        self.handTrackingProcess.communicate(input=b'\r\n\r\n\r\n')
+
         self.handTrackingProcess.kill()
 
         # print("Output: " + str(output))
 
-        self.handTrackingOutput = str(str(output).replace('\\n', '\n').replace('\\r', '\r'))
+        self.handTrackingOutput = ""
+
+        # self.handTrackingOutput = str(str(output).replace('\\n', '\n').replace('\\r', '\r'))
         self.handTrackingProcess = None
         pass
 
@@ -182,9 +186,15 @@ class CanvasWin(QMainWindow):
             file.write(key + " " + value + "\n")
         file.close()
 
-        file = open("{}-ultraleap.csv".format(fileName), "w")
-        file.write(self.handTrackingOutput)
-        file.close()
+        # # open both files
+        # with open('data.csv', 'r') as firstfile, open("{}-ultraleap.csv".format(fileName), 'a') as secondfile:
+        #     for line in firstfile:
+        #         secondfile.write(line)
+
+        # os.rename("./data.csv", "./{}-ultraleap.csv".format(fileName))
+        # # file = open("{}-ultraleap.csv".format(fileName), "w")
+        # # file.write(self.handTrackingOutput)
+        # # file.close()
 
     def toggleRecord(self):
         if self.recording:
