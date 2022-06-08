@@ -79,7 +79,6 @@ class CanvasWin(QMainWindow):
         super().__init__(parent)
 
         self.handTrackingProcess = None
-        self.handTrackingOutput = None
 
         self.setupCanvas()
 
@@ -103,16 +102,9 @@ class CanvasWin(QMainWindow):
         pass
 
     def stopHandTracking(self):
-        # (output, err) = self.handTrackingProcess.communicate(input=b'\r\n')
         self.handTrackingProcess.communicate(input=b'\r\n\r\n\r\n')
-
         self.handTrackingProcess.kill()
 
-        # print("Output: " + str(output))
-
-        self.handTrackingOutput = ""
-
-        # self.handTrackingOutput = str(str(output).replace('\\n', '\n').replace('\\r', '\r'))
         self.handTrackingProcess = None
         pass
 
@@ -137,6 +129,7 @@ class CanvasWin(QMainWindow):
         self.storedImage.fill(Qt.white)
 
         self.drawing = False
+        self.useMouse = True
 
         self.brushSize = 4
         self.brushColor = Qt.black
@@ -146,27 +139,27 @@ class CanvasWin(QMainWindow):
     def tabletEvent(self, event):
         eventType = event.type()
 
-        data = [event.xTilt(), event.yTilt(), event.pressure()]
+        self.pressure = event.pressure()
 
-        if (eventType == QEvent.TabletPress):
+        if eventType == QEvent.TabletPress:
             self.drawing = True
             self.lastPoint = event.pos()
 
             if self.recording:
-                self.recordInstance(self.lastPoint,data)
-        elif (eventType == QEvent.TabletMove and self.drawing):
+                self.recordInstance(self.lastPoint, self.pressure)
+        elif eventType == QEvent.TabletMove and self.drawing:
             self.paintLine(self.image, self.lastPoint, event.pos())
 
             if self.recording:
                 # self.paintLine(self.storedImage, self.lastPoint, event.pos())
-                self.recordInstance(self.lastPoint, data)
+                self.recordInstance(self.lastPoint, self.pressure)
 
             self.lastPoint = event.pos()
-
             self.update()
+
         elif eventType == QEvent.TabletRelease:
             self.drawing = False
-        self.pressure = event.pressure()
+
         print("Tablet Event, {}".format(self.pressure))
 
     def setupToolBar(self):
@@ -180,16 +173,15 @@ class CanvasWin(QMainWindow):
 
     def saveRecording(self, recordingName, difficulty):
         fileName = "{}_{}_{}_{}".format(activeUser, recordingName, self.recordingStartDate, self.recordingStartTime.replace(":", "-"))
-        file = open("{}-stylus.dat".format(fileName), "w")
+        file = open("./Data/{}-stylus.dat".format(fileName), "w")
         file.write("Author: {}\nDifficulty: {}\nDate:{}".format(activeUser, difficulty, self.recordingStartDate))
         for key, value in self.strokeData.items():
             file.write(key + " " + value + "\n")
         file.close()
 
-        # # open both files
-        # with open('data.csv', 'r') as firstfile, open("{}-ultraleap.csv".format(fileName), 'a') as secondfile:
-        #     for line in firstfile:
-        #         secondfile.write(line)
+        with open('data.csv', 'r') as firstFile, open("./Data/{}-ultraleap.csv".format(fileName), 'a') as secondFile:
+            for line in firstFile:
+                secondFile.write(line)
 
         # os.rename("./data.csv", "./{}-ultraleap.csv".format(fileName))
         # # file = open("{}-ultraleap.csv".format(fileName), "w")
@@ -216,12 +208,9 @@ class CanvasWin(QMainWindow):
 
         self.recording = not self.recording
 
-    #TODO Remove mouse callbacks
-
-    # TODO Compress
-    def recordInstance(self, pos, data):
-        self.strokeData[getTime()] = "({}, {}, {})".format(pos.x(), pos.y(), data)
-        print(getTime(), pos.x(), pos.y(), data)
+    def recordInstance(self, pos, pressure = 1):
+        self.strokeData[getTime()] = "({}, {}, {})".format(pos.x(), pos.y(), pressure)
+        print(getTime(), pos.x(), pos.y(), pressure)
 
     def save(self, recordingName, difficulty):
         self.saveRecording(recordingName, difficulty)
@@ -232,10 +221,8 @@ class CanvasWin(QMainWindow):
     def cancel(self):
         print("Cancel")
 
-    # TODO Maybe I need to Use Tablet Event to get rid of delay error
-
     def mousePressEvent(self, event):
-        return
+        if not self.useMouse: return
         if event.button() == Qt.LeftButton:
             self.drawing = True
             self.lastPoint = event.pos()
@@ -253,7 +240,7 @@ class CanvasWin(QMainWindow):
         painter.drawLine(pointA, pointB)
 
     def mouseMoveEvent(self, event):
-        return
+        if not self.useMouse: return
         if (event.buttons() & Qt.LeftButton) & self.drawing:
             self.paintLine(self.image, self.lastPoint, event.pos())
 
@@ -266,7 +253,7 @@ class CanvasWin(QMainWindow):
             self.update()
 
     def mouseReleaseEvent(self, event):
-        return
+        if not self.useMouse: return
         if event.button() == Qt.LeftButton:
             self.drawing = False
 
@@ -281,6 +268,7 @@ class CanvasWin(QMainWindow):
     def clear(self):
         self.image.fill(Qt.white)
         self.update()
+
 
 class MsgBoxDlg(QDialog):
     def __init__(self, parent=None):
@@ -324,6 +312,7 @@ class SaveDlg(QDialog):
             self.cancelCallback()
         self.close()
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
@@ -333,8 +322,5 @@ if __name__ == "__main__":
     l = LoginWin()
     l.loadCanvas = lambda _: win.show()
     l.exec()
-
-    # s = SaveDlg(win)
-    # s.exec()
 
     sys.exit(app.exec())
