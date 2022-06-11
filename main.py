@@ -138,7 +138,7 @@ class CanvasWin(QMainWindow):
         self.storedImage.fill(Qt.white)
 
         self.drawing = False
-        self.useMouse = False
+        self.useMouse = True
 
         self.brushSize = 4
         self.pressure = 1
