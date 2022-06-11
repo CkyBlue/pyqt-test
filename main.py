@@ -4,6 +4,10 @@ from components.Login import Ui_Dialog as Login
 from components.MsgBox import Ui_Dialog as MsgBox
 from components.SaveRec import Ui_Dialog as SaveRecording
 
+import shutil
+
+import shutil
+
 from utils import *
 
 import sys
@@ -83,21 +87,36 @@ class CanvasWin(QMainWindow):
         self.actionClear = createAction(self, "delete_icon.png", "actionClear", self.clear)
         self.actionRecord = createAction(self, "player_record.png", "actionRecord", self.toggleRecord)
 
+        self.singleRecordExec = "SingleRecording.exe"
+        self.pollingExec = "HandsDetected.exe"
+        # self.continuousRecordingExec = "ContinuousSampling.exe"
+
         self.recording = False
-        self.pressure = 1
+        self.pollingProc = Popen([self.pollingExec], stdout=PIPE, stdin=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
+
+        self.watcher = QFileSystemWatcher()
+        self.watcher.addPath('poll.dat')
+        self.watcher.fileChanged.connect(self.onPoll)
+
+        # fs_watcher = QtCore.QFileSystemWatcher(['./poll.dat'])
+        # fs_watcher.fileChanged.connect(self.onPoll)
 
         self.setupToolBar()
+
+    def onPoll(self):
+        with open('poll.dat', 'r') as f:
+            self.statusBar().showMessage("Hands Being Detected: {}".format(f.read()))
 
     def startHandTracking(self):
         if (self.handTrackingProcess != None):
             self.handTrackingProcess.terminate()
 
-        self.handTrackingProcess = Popen(["LeapTest.exe"], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        self.handTrackingProcess = Popen([self.singleRecordExec], stdout=PIPE, stdin=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
         pass
 
     def stopHandTracking(self):
-        self.handTrackingProcess.communicate(input=b'\r\n\r\n\r\n')
-        self.handTrackingProcess.kill()
+        self.handTrackingProcess.communicate(input='\r\n\r\n\r\n')
+        # self.handTrackingProcess.kill()
 
         self.handTrackingProcess = None
         pass
@@ -105,9 +124,6 @@ class CanvasWin(QMainWindow):
     def setupCanvas(self):
         self.setObjectName("MainWindow")
         self.setWindowTitle("Canvas")
-
-        # self.setGeometry(0, 0, self.frameGeometry().width(), self.frameGeometry().height())
-        # self.setFixedSize(800, 600)
 
         geometry = app.desktop().availableGeometry()
         self.setGeometry(geometry)
@@ -126,6 +142,8 @@ class CanvasWin(QMainWindow):
         self.useMouse = False
 
         self.brushSize = 4
+        self.pressure = 1
+
         self.brushColor = Qt.black
 
         self.lastPoint = QPoint()
@@ -167,20 +185,13 @@ class CanvasWin(QMainWindow):
 
     def saveRecording(self, recordingName, difficulty):
         fileName = "{}_{}_{}_{}".format(activeUser, recordingName, self.recordingStartDate, self.recordingStartTime.replace(":", "-"))
-        file = open("./Data/{}-stylus.dat".format(fileName), "w")
+        file = open("./DATA/{}-stylus.dat".format(fileName), "w")
         file.write("Author: {}\nDifficulty: {}\nDate:{}".format(activeUser, difficulty, self.recordingStartDate))
         for key, value in self.strokeData.items():
             file.write(key + " " + value + "\n")
         file.close()
 
-        with open('data.csv', 'r') as firstFile, open("./Data/{}-ultraleap.csv".format(fileName), 'a') as secondFile:
-            for line in firstFile:
-                secondFile.write(line)
-
-        # os.rename("./data.csv", "./{}-ultraleap.csv".format(fileName))
-        # # file = open("{}-ultraleap.csv".format(fileName), "w")
-        # # file.write(self.handTrackingOutput)
-        # # file.close()
+        shutil.move('Temp.dat', "./DATA/{}-ultraleap.dat".format(fileName))
 
     def toggleRecord(self):
         if self.recording:
@@ -262,6 +273,19 @@ class CanvasWin(QMainWindow):
     def clear(self):
         self.image.fill(Qt.white)
         self.update()
+
+    def closeEvent(self, event):
+        if self.recording:
+            msg = MsgBoxDlg()
+            msg.setMsg("Recording in Progress. Please end recording first.")
+            msg.exec()
+            event.ignore()
+
+        else:
+            self.pollingProc.communicate(input='\r\n\r\n\r\n')
+            # self.handTrackingProcess.kill()
+            event.accept()
+
 
 
 class MsgBoxDlg(QDialog):
