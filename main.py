@@ -6,8 +6,6 @@ from components.SaveRec import Ui_Dialog as SaveRecording
 
 import shutil
 
-import shutil
-
 from utils import *
 
 import sys
