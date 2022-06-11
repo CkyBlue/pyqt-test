@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QPoint, QEvent
+from PyQt5.QtCore import Qt, QPoint, QEvent, QFileSystemWatcher
 
 from components.Login import Ui_Dialog as Login
 from components.MsgBox import Ui_Dialog as MsgBox
@@ -127,6 +127,7 @@ class CanvasWin(QMainWindow):
         self.setGeometry(geometry)
 
         self.showMaximized()
+        self.setFixedSize(self.width(), self.height())
 
         self.setTabletTracking(True)
 
