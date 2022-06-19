@@ -87,10 +87,18 @@ class CanvasWin(QMainWindow):
 
         self.singleRecordExec = "SingleRecording.exe"
         self.pollingExec = "HandsDetected.exe"
-        # self.continuousRecordingExec = "ContinuousSampling.exe"
+        self.continuousRecordingExec = "ContinuousSampling.exe"
 
         self.recording = False
-        self.pollingProc = Popen([self.pollingExec], stdout=PIPE, stdin=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
+
+        self.synchronize = False
+        self.poll = False
+
+        if self.synchronize:
+            self.continuousRecordingProc = Popen([self.continuousRecordingExec], stdout=PIPE, stdin=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
+
+        if self.poll:
+            self.pollingProc = Popen([self.pollingExec], stdout=PIPE, stdin=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True)
 
         self.watcher = QFileSystemWatcher()
         self.watcher.addPath('poll.dat')
@@ -102,10 +110,14 @@ class CanvasWin(QMainWindow):
         self.setupToolBar()
 
     def onPoll(self):
-        with open('poll.dat', 'r') as f:
-            self.statusBar().showMessage("Hands Being Detected: {}".format(f.read()))
+        try:
+            with open('poll.dat', 'r') as f:
+                self.statusBar().showMessage("Hands Being Detected: {}".format(f.read()))
+        except:
+            print("Bad Poll")
 
     def startHandTracking(self):
+        return
         if (self.handTrackingProcess != None):
             self.handTrackingProcess.terminate()
 
@@ -113,6 +125,7 @@ class CanvasWin(QMainWindow):
         pass
 
     def stopHandTracking(self):
+        return
         self.handTrackingProcess.communicate(input='\r\n\r\n\r\n')
         # self.handTrackingProcess.kill()
 
@@ -138,7 +151,7 @@ class CanvasWin(QMainWindow):
         self.storedImage.fill(Qt.white)
 
         self.drawing = False
-        self.useMouse = True
+        self.useMouse = False
 
         self.brushSize = 4
         self.pressure = 1
@@ -151,19 +164,20 @@ class CanvasWin(QMainWindow):
         eventType = event.type()
 
         self.pressure = event.pressure()
+        rot = event.rotation()
 
         if eventType == QEvent.TabletPress:
             self.drawing = True
             self.lastPoint = event.pos()
 
             if self.recording:
-                self.recordInstance(self.lastPoint, self.pressure)
+                self.recordInstance(self.lastPoint, self.pressure, rot)
         elif eventType == QEvent.TabletMove and self.drawing:
             self.paintLine(self.image, self.lastPoint, event.pos())
 
             if self.recording:
                 # self.paintLine(self.storedImage, self.lastPoint, event.pos())
-                self.recordInstance(self.lastPoint, self.pressure)
+                self.recordInstance(self.lastPoint, self.pressure, rot)
 
             self.lastPoint = event.pos()
             self.update()
@@ -185,12 +199,12 @@ class CanvasWin(QMainWindow):
     def saveRecording(self, recordingName, difficulty):
         fileName = "{}_{}_{}_{}".format(activeUser, recordingName, self.recordingStartDate, self.recordingStartTime.replace(":", "-"))
         file = open("./DATA/{}-stylus.dat".format(fileName), "w")
-        file.write("Author: {}\nDifficulty: {}\nDate:{}".format(activeUser, difficulty, self.recordingStartDate))
+        file.write("Author: {}\nDifficulty: {}\nDate:{}\n".format(activeUser, difficulty, self.recordingStartDate))
         for key, value in self.strokeData.items():
             file.write(key + " " + value + "\n")
         file.close()
 
-        shutil.move('Temp.dat', "./DATA/{}-ultraleap.dat".format(fileName))
+        #shutil.move('Temp.dat', "./DATA/{}-ultraleap.dat".format(fileName))
 
     def toggleRecord(self):
         if self.recording:
@@ -212,8 +226,8 @@ class CanvasWin(QMainWindow):
 
         self.recording = not self.recording
 
-    def recordInstance(self, pos, pressure = 1):
-        self.strokeData[getTime()] = "({}, {}, {})".format(pos.x(), pos.y(), pressure)
+    def recordInstance(self, pos, pressure = 1, extra = None):
+        self.strokeData[getTime()] = "({}, {}, {}, {})".format(pos.x(), pos.y(), pressure, extra)
         print(getTime(), pos.x(), pos.y(), pressure)
 
     def save(self, recordingName, difficulty):
@@ -281,8 +295,14 @@ class CanvasWin(QMainWindow):
             event.ignore()
 
         else:
-            self.pollingProc.communicate(input='\r\n\r\n\r\n')
-            # self.handTrackingProcess.kill()
+            if self.poll:
+                self.pollingProc.communicate(input='\r\n\r\n\r\n')
+
+            if self.synchronize:
+                self.continuousRecordingProc.communicate(input='\r\n\r\n\r\n')
+            # self.continuousRecordingProc.kill()
+            # self.pollingProc.kill()
+
             event.accept()
 
 
