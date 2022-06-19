@@ -164,7 +164,7 @@ class CanvasWin(QMainWindow):
         eventType = event.type()
 
         self.pressure = event.pressure()
-        rot = event.rotation()
+        rot = [event.rotation(), event.yTilt(), event.xTilt()]
 
         if eventType == QEvent.TabletPress:
             self.drawing = True
@@ -228,7 +228,7 @@ class CanvasWin(QMainWindow):
 
     def recordInstance(self, pos, pressure = 1, extra = None):
         self.strokeData[getTime()] = "({}, {}, {}, {})".format(pos.x(), pos.y(), pressure, extra)
-        print(getTime(), pos.x(), pos.y(), pressure)
+        print(getTime(), pos.x(), pos.y(), pressure, extra)
 
     def save(self, recordingName, difficulty):
         self.saveRecording(recordingName, difficulty)
